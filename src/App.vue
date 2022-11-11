@@ -1,14 +1,16 @@
 <template>
-  <gameLive :available_tiles="available_tiles" :players="players" :tiles="tiles" :mouse_positions="mouse_positions" :holder="holder"/>
+  <gameLive v-if="liveGame()" :join_code="join_code" :available_tiles="available_tiles" :players="players" :tiles="tiles" :mouse_positions="mouse_positions" :holder="holder"/>
+  <gameLobby v-else :join_code="join_code" :available_tiles="available_tiles" :players="players" :tiles="tiles" :mouse_positions="mouse_positions" :holder="holder"/>
 </template>
 
 <script>
 import gameLive from './components/GameLive.vue'
+import gameLobby from './components/GameLobby.vue'
 
 export default {
   name: 'App',
   components: {
-    gameLive
+    gameLive, gameLobby
   },
   data: function(){
     return {
@@ -26,6 +28,20 @@ export default {
     }
   },
   methods:{
+    liveGame: function(){
+      try{
+        console.log(localStorage.join_code)
+        if(localStorage.join_code != null && localStorage.join_code !== undefined && localStorage.join_code != 'null'){
+          console.log("TRUE");
+          return true;
+        }
+        console.log("FALSE");
+        return false;
+      }catch(error){
+        console.log("FALSE");
+        return false;
+      }
+    }
   },
   mounted() {
   }
