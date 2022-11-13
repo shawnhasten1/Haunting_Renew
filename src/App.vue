@@ -22,8 +22,9 @@ export default {
         start_y:0
       },
       holder:{
-        pos_x:-5484/2,
-        pos_y:-5484/2
+        pos_x:-6144/2,
+        pos_y:-6144/2,
+        scale:.8
       }
     }
   },
@@ -49,6 +50,9 @@ export default {
 </script>
 
 <style>
+body{
+  overflow: hidden;
+}
 *{
   -webkit-touch-callout: null; /* iOS Safari */
     -webkit-user-select: null; /* Safari */
@@ -102,7 +106,8 @@ export default {
 #controller_holder{
   background:black; 
   width:500px; 
-  height: 250px; 
+  max-width: 100vw;
+  height: 200px; 
   position:absolute; 
   bottom:0px; 
   left: 0px;

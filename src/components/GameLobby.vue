@@ -5,6 +5,10 @@
                 <label for="join_code">JOIN CODE</label>
                 <input type="text" id="join_code" class="form-control" placeholder="Enter Join Code">
             </div>
+            <div class="form-group mt-2">
+                <label for="display_name">Display Name</label>
+                <input type="text" id="display_name" class="form-control" placeholder="Enter Display Name">
+            </div>
             <div class="btn btn-primary mt-2" @click="getGame()">Join</div>
         </form>
         <form class="form-inline col-md-6 col-lg-3 col-sm-12 border p-4 rounded mt-2">
@@ -43,17 +47,18 @@ export default {
     },
     methods:{
         getGame: function(){
-            axios.post("http://localhost:5000/v1/game", {'join_code':document.getElementById("join_code").value})
+            axios.post("http://192.168.0.33:5000/v1/game", {'join_code':document.getElementById("join_code").value,'display_name':document.getElementById("display_name").value})
             .then(response => {
                 console.log(response.data);
                 this.session.available_tiles = response.data['available_tiles'];
                 this.session.players = response.data['players'];
                 localStorage.join_code = response.data['join_code'];
+                localStorage.display_name = document.getElementById("display_name").value;
                 window.location.reload();
             })
         },
         generateGame: function(){
-            axios.get("http://localhost:5000/v1/generate_game")
+            axios.get("http://192.168.0.33:5000/v1/generate_game")
             .then(response => {
                 console.log(response.data);
                 document.getElementById("join_code").value = response.data['join_code'];

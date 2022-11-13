@@ -1,22 +1,23 @@
 <template>
-    <div id="wrapper" @mousedown="setMouseDown($event)" @mouseup="setMouseUp()" @mousemove="dragBackground($event)">
-    <div id="tile_holder" v-bind:style="'transform:translate('+holder.pos_x+'px,'+holder.pos_y+'px) scale(1);'">
+    <div id="wrapper" @touchstart="setMouseDown($event)" @mousedown="setMouseDown($event)" @touchend="setMouseUp()" @mouseup="setMouseUp()" @touchmove="dragBackground($event)" @mousemove="dragBackground($event)">
+    <div id="tile_holder" v-bind:style="'transform:translate('+holder.pos_x+'px,'+holder.pos_y+'px) scale('+holder.scale+');'">
         <div class="row" v-for="row in session.tiles" :key="row">
             <div class="tile" v-for="col in row" :key="col" v-bind:id="getID(col.row, col.col)" :row="col.row" :col="col.col" v-bind:style="{'background-image':'url('+getImg(col.background)+')'}">
                 {{col.row}} - {{col.col}}
                 <div class="token_holder">
-                    <div v-for="player in col.players" :key="player" style="width:75px; height:75px; background-size: cover;" v-bind:style="{'background-image':'url('+getImg('players/player_1.png')+')'}"></div>
+                    <div v-for="player in col.players" :key="player" style="width:75px; height:75px; background-size: cover; color: white;" v-bind:style="{'background-image':'url('+getImg('players/player_1.png')+')'}">{{player.display_name}}</div>
                 </div>
             </div>
         </div>
     </div>
     </div>
     <div id="controller_holder">
-        <div class="controller_key" style="margin-top:105px; margin-left:160px;" @mouseup="movePlayers('left')">&mapstoleft;</div>
-        <div class="controller_key" style="margin-top:105px; margin-left:290px;" @mouseup="movePlayers('right')">&mapsto;</div>
-        <div class="controller_key" style="margin-top:105px; margin-left:225px;" @mouseup="movePlayers('down')">&mapstodown;</div>
-        <div class="controller_key" style="margin-top:30px; margin-left:225px;" @mouseup="movePlayers('up')">&mapstoup;</div>
+        <div class="controller_key" style="margin-top:105px; margin-left:120px;" @mouseup="movePlayers('left')">&mapstoleft;</div>
+        <div class="controller_key" style="margin-top:105px; margin-left:240px;" @mouseup="movePlayers('right')">&mapsto;</div>
+        <div class="controller_key" style="margin-top:105px; margin-left:180px;" @mouseup="movePlayers('down')">&mapstodown;</div>
+        <div class="controller_key" style="margin-top:35px; margin-left:180px;" @mouseup="movePlayers('up')">&mapstoup;</div>
         <button @click="restartGame()">Leave Game</button>
+        <button @click="centerPlayer()">Center Player</button>
     </div>
 </template>
 <script>
@@ -53,8 +54,20 @@
         this.session.mouse_down = true;
     
         //GET THE START POSITION OF THE MOUSE SO WE CAN OFFSET WHEN MOVE
-        this.session.mouse_positions.start_x = e.clientX;
-        this.session.mouse_positions.start_y = e.clientY;
+        var client_x = null;
+        var client_y = null;
+        if(e.type == 'touchstart'){
+          client_x = e.touches[0].clientX;
+          client_y = e.touches[0].clientY;
+        }
+        else{
+          client_x = e.clientX;
+          client_y = e.clientY;
+        }
+        console.log(client_x)
+        console.log(client_y)
+        this.session.mouse_positions.start_x = client_x;
+        this.session.mouse_positions.start_y = client_y;
       },
       setMouseUp: function(){
         document.getElementById("wrapper").style.cursor = "default";
@@ -63,8 +76,20 @@
       dragBackground: function(e){
         if(this.session.mouse_down){
           //CALCULATE HOW MUCH OUR MOUSE MOVED TO OFFSET THE HOLDER
-          this.session.holder.pos_x += e.clientX - this.session.mouse_positions.start_x;
-          this.session.holder.pos_y += e.clientY - this.session.mouse_positions.start_y;
+          var client_x = null;
+          var client_y = null;
+          if(e.type == 'touchmove'){
+            client_x = e.touches[0].clientX;
+            client_y = e.touches[0].clientY;
+          }
+          else{
+            client_x = e.clientX;
+            client_y = e.clientY;
+          }
+          console.log(client_x)
+          console.log(client_y)
+          this.session.holder.pos_x += client_x - this.session.mouse_positions.start_x;
+          this.session.holder.pos_y += client_y - this.session.mouse_positions.start_y;
     
           if(this.session.holder.pos_x>=0){
             this.session.holder.pos_x = 0;
@@ -83,8 +108,8 @@
           }
     
           //RESET THE START POSITIONS TO THE NEW MOUSE POSITION
-          this.session.mouse_positions.start_x = e.clientX;
-          this.session.mouse_positions.start_y = e.clientY;
+          this.session.mouse_positions.start_x = client_x;
+          this.session.mouse_positions.start_y = client_y;
         }
       },
       getID(row, col) {
@@ -171,32 +196,38 @@
                   this.session.tiles[x][y]['players'] = [];
               }
           }
-          console.log(this.session.tiles);
           for(var i = 0; i<this.session.players.length; i++){
-              console.log(this.session.players[i]['row'])
-              console.log(this.session.players[i]['col'])
               this.session.tiles[this.session.players[i]['row']][this.session.players[i]['col']]['players'].push(this.session.players[i]);
           }
           this.session.canMove = false;
-          axios.put("http://localhost:5000/v1/game", {'join_code':localStorage.join_code, 'available_tiles':this.session.available_tiles, 'players':this.session.players, 'tiles':this.session.tiles})
+          axios.put("http://192.168.0.33:5000/v1/game", {'join_code':localStorage.join_code, 'available_tiles':this.session.available_tiles, 'tiles':this.session.tiles})
           .then(response => {
               console.log(response.data);
               this.session.canMove = true;
           })
       },
       restartGame(){
-          localStorage.join_code = null;
-          window.location.reload();
+          axios.post("http://192.168.0.33:5000/v1/leave_game", {'join_code':localStorage.join_code,'display_name':localStorage.display_name})
+          .then(response => {
+            console.log(response);
+            localStorage.join_code = null;
+            localStorage.display_name = null;
+            window.location.reload();
+          })
+      },
+      centerPlayer(){
+        var pos_x = (this.session.players[0]['col']/2)*512;
+        this.session.holder.pos_x = -pos_x+200;
+        var pos_y = (this.session.players[0]['row']/2)*512;
+        this.session.holder.pos_y = -pos_y-100;
       }
     },
     mounted() {
-      axios.get("http://localhost:5000/v1/game?join_code="+localStorage.join_code)
+      axios.get("http://192.168.0.33:5000/v1/game?join_code="+localStorage.join_code)
         .then(response => {
-          console.log(response.data);
           this.session.available_tiles = response.data['available_tiles'];
           this.session.players = response.data['players'];
           this.session.tiles = response.data['tiles'];
-          console.log(this.session.tiles);
           if(this.session.tiles.length>0){
               this.calculatePlayers();
           }
@@ -208,21 +239,21 @@
                       var directions = [];
                       var available = true;
                       if(y == 12){
-                      if(x==11){
-                          url = 'tiles/foyer-top.jpg';
-                          directions = ['down'];
-                          available = false;
-                      }
-                      else if(x==12){
-                          url = 'tiles/foyer-mid.jpg';
-                          directions = ['left','right', 'down', 'up'];
-                          available = false;
-                      }
-                      else if(x==13){
-                          url = 'tiles/foyer-bottom.jpg';
-                          directions = ['left','right', 'down', 'up'];
-                          available = false;
-                      }
+                        if(x==11){
+                            url = 'tiles/foyer-top.jpg';
+                            directions = ['down'];
+                            available = false;
+                        }
+                        else if(x==12){
+                            url = 'tiles/foyer-mid.jpg';
+                            directions = ['left','right', 'down', 'up'];
+                            available = false;
+                        }
+                        else if(x==13){
+                            url = 'tiles/foyer-bottom.jpg';
+                            directions = ['left','right', 'down', 'up'];
+                            available = false;
+                        }
                       }
                       row_tiles.push({
                           'background':url,
@@ -235,14 +266,8 @@
                   }
                   this.session.tiles.push(row_tiles);
               }
-              this.session.players = [{
-                  "col": 12,
-                  "floor": "ground",
-                  "row": 13
-              }]
               this.session.canMove = false;
-              console.log(this.session.tiles)
-              axios.put("http://localhost:5000/v1/game", {'join_code':localStorage.join_code, 'players':this.session.players, 'tiles':this.session.tiles})
+              axios.put("http://192.168.0.33:5000/v1/game", {'join_code':localStorage.join_code, 'tiles':this.session.tiles})
               .then(response => {
                   console.log(response.data);
                   this.session.canMove = true;
